@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+
 #include <WinSock2.h>
 #pragma comment(lib, "WS2_32.lib")
 
-#define PRINT(str) printf("[%s -- %d]%s", __func__, __LINE__, str);
+#define PRINT(str) printf("[%s -- %d]%s\n", __func__, __LINE__, str);
 
 void error_die(const char* str) {
 	perror(str);
@@ -92,6 +94,14 @@ void unimplement(int client) {
 
 }
 
+void not_found(int client) {
+
+}
+
+void server_file(int client, const char* fileName) {
+
+}
+
 DWORD WINAPI accept_request(LPVOID arg) {
 	char buff[1024];
 	int client = (SOCKET)arg;
@@ -121,6 +131,26 @@ DWORD WINAPI accept_request(LPVOID arg) {
 	}
 	url[i] = 0;
 
+	char path[512] = "";
+	sprintf(path, "htdocs%s", url);
+	if (path[strlen(path) - 1] == '/') {
+		strcat(path, "index.html");
+	}
+
+	struct stat status;
+	if (stat(path, &status) == -1) {
+		while (num_chars > 0 && strcmp(buff, "\n")) {
+			num_chars = get_line(client, buff, sizeof(buff));
+		}
+		not_found(client);
+	}
+	else {
+		if ((status.st_mode & S_IFMT) == S_IFDIR) {
+			strcat(path, "/index.html");
+		}
+		server_file(client, path);
+	}
+	closesocket(client);
 	return 0;
 }
 
