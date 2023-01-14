@@ -2,6 +2,8 @@
 #include <WinSock2.h>
 #pragma comment(lib, "WS2_32.lib")
 
+#define PRINT(str) printf("[%s -- %d]%s", __func__, __LINE__, str);
+
 void error_die(const char* str) {
 	perror(str);
 	exit(1);
@@ -52,9 +54,63 @@ int start_up(unsigned short* port) {
 	return server_socket;
 }
 
+int get_line(int sock, char* buff, int size)
+{
+	char c = 0;
+	int i = 0;
+
+	while (i<size-1 && c != '\n')
+	{
+		int n = recv(sock, &c, 1, 0);
+		if (n > 0)
+		{
+			if (c == '\r')
+			{
+				n = recv(sock, &c, 1 , MSG_PEEK);
+				if(n>0 && c == '\n')
+				{
+					recv(sock, &c , 1, 0);
+				}else
+				{
+					c = '\n';
+				}
+			}
+			buff[i++] = c;
+		}
+		else
+		{
+			c = '\n';
+		}
+	}
+	buff[i] = 0;
+	return i;
+}
+
+DWORD WINAPI accept_request(LPVOID arg) {
+	char buff[1024];
+	int client = (SOCKET)arg;
+
+	int num_chars = get_line(client, buff, sizeof(buff));
+	PRINT(buff);
+	return 0;
+}
+
 int main(void) {
-	unsigned short port = 0;
+	unsigned short port = 2333;
 	int server_sock = start_up(&port);
-	printf("HTTP INITED. port: %d", port);
+	printf("HTTP INITED. port: %d\n", port);
+
+	struct sockaddr_in client_addr;
+	int client_addr_len = sizeof(client_addr);
+	while (1) {
+		// ×èÈûÊ½µÈ´ý
+		int client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_len);
+		if (client_sock == -1) {
+			error_die("client_sock");
+		}
+		DWORD threadId = 0;
+		CreateThread(0, 0, accept_request, (void*)client_sock, 0, &threadId);
+	}
+	closesocket(server_sock);
 	return 0;
 }
