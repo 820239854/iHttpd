@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-
 #include <WinSock2.h>
 #pragma comment(lib, "WS2_32.lib")
 
-#define PRINT(str) printf("[%s -- %d]%s\n", __func__, __LINE__, str);
+#define PRINT(str) printf("[%s-%d]%s", __func__, __LINE__, str);
 
 void error_die(const char* str) {
 	perror(str);
@@ -91,15 +90,66 @@ int get_line(int sock, char* buff, int size)
 }
 
 void unimplement(int client) {
-
 }
 
 void not_found(int client) {
 
 }
 
-void server_file(int client, const char* fileName) {
+void headers(int client) {
+	char buff[1024];
+	strcpy(buff, "HTTP/1.0 200 OK\r\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
 
+	strcpy(buff, "Server: Xing/0.1\r\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+
+	strcpy(buff, "Content-type:text/html\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+
+	strcpy(buff, "\r\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+}
+
+void cat(int client, FILE* resource) {
+	char buff[4096];
+	int count = 0;
+
+	while (1)
+	{
+		memset(buff, 0, 4096);
+		int result = fread(buff, sizeof(char), sizeof(buff), resource);
+		if (result <= 0) {
+			break;
+		}
+		send(client, buff, result, 0);
+		count += result;
+		PRINT(buff);
+	}
+}
+
+void server_file(int client, const char* fileName) {
+	char num_chars = 1;
+	char buff[1024];
+	while (num_chars > 0 && strcmp(buff, "\n")) {
+		num_chars = get_line(client, buff, sizeof(buff));
+		PRINT(buff);
+	}
+
+	FILE* resource = fopen(fileName, "r");
+	if (resource == NULL) {
+		not_found(client);
+	}
+	else {
+		headers(client);
+		cat(client, resource);
+		PRINT("resource sended");
+	}
+	fclose(resource);
 }
 
 DWORD WINAPI accept_request(LPVOID arg) {
