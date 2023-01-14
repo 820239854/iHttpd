@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <WinSock2.h>
 #pragma comment(lib, "WS2_32.lib")
 
@@ -59,18 +60,19 @@ int get_line(int sock, char* buff, int size)
 	char c = 0;
 	int i = 0;
 
-	while (i<size-1 && c != '\n')
+	while (i < size - 1 && c != '\n')
 	{
 		int n = recv(sock, &c, 1, 0);
 		if (n > 0)
 		{
 			if (c == '\r')
 			{
-				n = recv(sock, &c, 1 , MSG_PEEK);
-				if(n>0 && c == '\n')
+				n = recv(sock, &c, 1, MSG_PEEK);
+				if (n > 0 && c == '\n')
 				{
-					recv(sock, &c , 1, 0);
-				}else
+					recv(sock, &c, 1, 0);
+				}
+				else
 				{
 					c = '\n';
 				}
@@ -86,12 +88,39 @@ int get_line(int sock, char* buff, int size)
 	return i;
 }
 
+void unimplement(int client) {
+
+}
+
 DWORD WINAPI accept_request(LPVOID arg) {
 	char buff[1024];
 	int client = (SOCKET)arg;
 
 	int num_chars = get_line(client, buff, sizeof(buff));
-	PRINT(buff);
+
+	char method[255];
+	int j = 0, i = 0;
+	while (!isspace(buff[j]) && i < sizeof(method) - 1) {
+		method[i++] = buff[j++];
+	}
+	method[i] = 0;
+
+	if (stricmp(method, "GET") && stricmp(method, "POST")) {
+		unimplement(client);
+		return 0;
+	}
+
+	while (isspace(buff[j]) && j < sizeof(buff)) {
+		j++;
+	}
+
+	char url[255];
+	i = 0;
+	while (!isspace(buff[j]) && i < sizeof(url) - 1 && j < sizeof(buff)) {
+		url[i++] = buff[j++];
+	}
+	url[i] = 0;
+
 	return 0;
 }
 
