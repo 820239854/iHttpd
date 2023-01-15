@@ -4,7 +4,7 @@
 #include <WinSock2.h>
 #pragma comment(lib, "WS2_32.lib")
 
-#define PRINT(str) printf("[%s-%d]%s", __func__, __LINE__, str);
+#define PRINT(str) printf("[%s-%d]%s\n", __func__, __LINE__, str);
 
 void error_die(const char* str) {
 	perror(str);
@@ -133,14 +133,21 @@ void cat(int client, FILE* resource) {
 }
 
 void server_file(int client, const char* fileName) {
-	char num_chars = 1;
+	int num_chars = 1;
 	char buff[1024];
 	while (num_chars > 0 && strcmp(buff, "\n")) {
 		num_chars = get_line(client, buff, sizeof(buff));
 		PRINT(buff);
 	}
 
-	FILE* resource = fopen(fileName, "r");
+	FILE* resource = NULL;
+	if (strcmp(fileName, "htdocs/index.html") == 0) {
+		resource = fopen(fileName, "r");
+	}
+	else {
+		resource = fopen(fileName, "rb");
+	}
+
 	if (resource == NULL) {
 		not_found(client);
 	}
@@ -186,6 +193,7 @@ DWORD WINAPI accept_request(LPVOID arg) {
 	if (path[strlen(path) - 1] == '/') {
 		strcat(path, "index.html");
 	}
+	PRINT(path);
 
 	struct stat status;
 	if (stat(path, &status) == -1) {
