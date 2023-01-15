@@ -92,8 +92,42 @@ int get_line(int sock, char* buff, int size)
 void unimplement(int client) {
 }
 
-void not_found(int client) {
+void cat(int client, FILE* resource) {
+	char buff[4096];
+	int count = 0;
 
+	while (1)
+	{
+		memset(buff, 0, 4096);
+		int result = fread(buff, sizeof(char), sizeof(buff), resource);
+		if (result <= 0) {
+			break;
+		}
+		send(client, buff, result, 0);
+		count += result;
+		PRINT(buff);
+	}
+}
+
+void not_found(int client) {
+	char buff[1024];
+	strcpy(buff, "HTTP/1.0 404 NOT FOUND\r\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+
+	strcpy(buff, "Server: Xing/0.1\r\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+
+	strcpy(buff, "Content-type:text/html\n");
+	send(client, buff, strlen(buff), 0);
+	PRINT(buff);
+
+	strcpy(buff, "\r\n");
+	send(client, buff, strlen(buff), 0);
+
+	FILE* resource = fopen("htdocs/404.html", "rb");
+	cat(client, resource);
 }
 
 void headers(int client) {
@@ -113,23 +147,6 @@ void headers(int client) {
 	strcpy(buff, "\r\n");
 	send(client, buff, strlen(buff), 0);
 	PRINT(buff);
-}
-
-void cat(int client, FILE* resource) {
-	char buff[4096];
-	int count = 0;
-
-	while (1)
-	{
-		memset(buff, 0, 4096);
-		int result = fread(buff, sizeof(char), sizeof(buff), resource);
-		if (result <= 0) {
-			break;
-		}
-		send(client, buff, result, 0);
-		count += result;
-		PRINT(buff);
-	}
 }
 
 void server_file(int client, const char* fileName) {
