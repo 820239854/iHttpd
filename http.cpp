@@ -92,6 +92,29 @@ int get_line(int sock, char* buff, int size)
 void unimplement(int client) {
 }
 
+const char* getHeadType(const char* fileName)
+{
+	const char* ret = "text/html";
+	const char* p = strrchr(fileName, '.');
+	if (!p) {
+		return ret;
+	}
+	p++;
+	if (!strcmp(p, "css")) {
+		return "text/css";
+	}
+	else if (!strcmp(p, "jpg")) {
+		return "text/jpeg";
+	}
+	else if (!strcmp(p, "png")) {
+		return "text/png";
+	}
+	else if (!strcmp(p, "js")) {
+		return "application/x-javascript";
+	}
+	return ret;
+}
+
 void cat(int client, FILE* resource) {
 	char buff[4096];
 	int count = 0;
@@ -130,7 +153,7 @@ void not_found(int client) {
 	cat(client, resource);
 }
 
-void headers(int client) {
+void headers(int client, const char* type) {
 	char buff[1024];
 	strcpy(buff, "HTTP/1.0 200 OK\r\n");
 	send(client, buff, strlen(buff), 0);
@@ -140,7 +163,8 @@ void headers(int client) {
 	send(client, buff, strlen(buff), 0);
 	PRINT(buff);
 
-	strcpy(buff, "Content-type:text/html\n");
+	char buf[1024];
+	sprintf(buf, "Content-type: %s\r\n", type);
 	send(client, buff, strlen(buff), 0);
 	PRINT(buff);
 
@@ -169,7 +193,7 @@ void server_file(int client, const char* fileName) {
 		not_found(client);
 	}
 	else {
-		headers(client);
+		headers(client, getHeadType(fileName));
 		cat(client, resource);
 		PRINT("resource sended");
 	}
