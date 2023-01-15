@@ -13,14 +13,23 @@ int main(void) {
 		return 1;
 	}
 
+	char cmd[] = "ping www.baidu.com";
+	STARTUPINFO si = { 0 };
+	si.cb = sizeof(si);
+	si.hStdOutput = output[1];
+	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+	PROCESS_INFORMATION pi = { 0 };
+	bCreate = CreateProcess(NULL, cmd, 0, 0, TRUE, 0, 0, 0, &si, &pi);
+	if (bCreate == false) {
+		printf("Init Process Failed");
+		return 1;
+	}
+
 	char buff[1024];
 	DWORD size;
 	while (1) {
-		printf("Please Input\n");
-		gets_s(buff, sizeof(buff));
-		WriteFile(output[1], buff, strlen(buff) + 1, &size, NULL);
-		printf("Writed %d Bytes\n", size);
 		ReadFile(output[0], buff, sizeof(buff), &size, NULL);
+		buff[size] = '\0';
 		printf("Readed %d Bytes: [%s]\n", size, buff);
 	}
 	return 0;
